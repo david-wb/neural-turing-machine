@@ -7,9 +7,10 @@ from tensorflow.keras import Model
 
 def _convolve(w, s):
     """Circular convolution implementation."""
-    assert s.shape(0) == 3
+    assert s.shape[0] == 3
     t = tf.concat([w[-1:], w, w[:1]], axis=0)
-    c = tf.nn.conv1d(tf.reshape(t, (1, 1, -1)), tf.reshape(s, (-1, 1, 1)))
+    s = tf.cast(s, dtype='float32')
+    c = tf.nn.conv1d(tf.reshape(t, (1, -1, 1)), tf.reshape(s, (-1, 1, 1)), stride=1, padding='VALID')
     c = tf.reshape(c, (-1,))
     return c
 
@@ -18,10 +19,10 @@ class NTMMemory(Model):
     """Memory bank for NTM."""
     def __init__(self, n_rows: int, n_cols: int):
         """Initialize the NTM Memory matrix.
-        The memory's dimensions are (batch_size x N x M).
+        The memory's dimensions are (n_rows x n_cols).
         Each batch has it's own memory matrix.
-        :param N: Number of rows in the memory.
-        :param M: Number of columns/features in the memory.
+        :param n_rows: Number of rows in the memory.
+        :param n_cols: Number of columns in the memory.
         """
         super(NTMMemory, self).__init__()
 
@@ -34,11 +35,11 @@ class NTMMemory(Model):
 
         # Initialize memory bias tensor
         stdev = 1 / (np.sqrt(n_rows + n_cols))
-        self.mem_bias: tf.Tensor = tf.random.uniform((n_rows, n_cols), -stdev, stdev)
+        self.mem_bias: tf.Variable = tf.Variable(tf.random.uniform((n_rows, n_cols), -stdev, stdev), name='mem_bias')
 
-    def reset(self, batch_size):
+    def reset(self):
         """Initialize memory from bias, for start-of-sequence."""
-        self.mem.assign(self.mem_bias)
+        self.mem = tf.convert_to_tensor(self.mem_bias)
 
     def size(self):
         return self.N, self.M
@@ -54,29 +55,29 @@ class NTMMemory(Model):
         add = tf.matmul(tf.expand_dims(w, -1), tf.expand_dims(a, 0))
         self.mem = self.prev_mem * (1 - erase) + add
 
-    def address(self, k, β, g, s, γ, w_prev):
+    def address(self, k, beta, g, s, gamma, w_prev):
         """NTM Addressing (according to section 3.3).
         Returns a softmax weighting over the rows of the memory matrix.
         :param k: The key vector.
-        :param β: The key strength (focus).
+        :param beta: The key strength (focus).
         :param g: Scalar interpolation gate (with previous weighting).
         :param s: Shift weighting.
-        :param γ: Sharpen weighting scalar.
+        :param gamma: Sharpen weighting scalar.
         :param w_prev: The weighting produced in the previous time step.
         """
         # Content focus
-        wc = self._similarity(k, β)
+        wc = self._similarity(k, beta)
 
         # Location focus
         wg = self._interpolate(w_prev, wc, g)
-        ŵ = self._shift(wg, s)
-        w = self._sharpen(ŵ, γ)
+        w_hat = self._shift(wg, s)
+        w = self._sharpen(w_hat, gamma)
 
         return w
 
-    def _similarity(self, k, β):
-        cos_sim = tf.keras.losses.cosine_similarity(self.memory + 1e-16, k + 1e-16)
-        w = tf.nn.softmax(β * cos_sim, axis=-1)
+    def _similarity(self, k, beta):
+        cos_sim = 1 - tf.keras.losses.cosine_similarity(self.mem + 1e-16, k + 1e-16)
+        w = tf.nn.softmax(beta * cos_sim, axis=-1)
         return w
 
     def _interpolate(self, w_prev, wc, g):
@@ -84,10 +85,10 @@ class NTMMemory(Model):
 
     def _shift(self, wg, s):
         result = tf.zeros(wg.shape)
-        result= _convolve(wg, s)
+        result = _convolve(wg, s)
         return result
 
-    def _sharpen(self, ŵ, γ):
-        w = ŵ ** γ
+    def _sharpen(self, w_hat, gamma):
+        w = w_hat ** gamma
         w = w / (tf.math.reduce_sum(w) + 1e-16)
         return w
