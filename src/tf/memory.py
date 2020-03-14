@@ -7,8 +7,10 @@ from tensorflow.keras import Model
 
 def _convolve(w, s):
     """Circular convolution implementation."""
-    assert s.shape[0] == 3
-    t = tf.concat([w[-1:], w, w[:1]], axis=0)
+    assert s.shape[1] == 3
+    first_col = tf.slice(w, [0, 0], [-1, 1])
+    last_col = tf.slice(w, [0, w.shape[1] - 1], [-1, 1])
+    t = tf.concat([last_col, w, first_col], axis=1)
     s = tf.cast(s, dtype='float32')
     c = tf.nn.conv1d(tf.reshape(t, (1, -1, 1)), tf.reshape(s, (-1, 1, 1)), stride=1, padding='VALID')
     c = tf.reshape(c, (-1,))
@@ -42,7 +44,7 @@ class NTMMemory(Model):
         self.mem = tf.convert_to_tensor(self.mem_bias)
 
     def size(self):
-        return self.N, self.M
+        return self.n_rows, self.n_cols
 
     def read(self, weights: tf.Tensor):
         """Read from memory (according to section 3.1)."""
