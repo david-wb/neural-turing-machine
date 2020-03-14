@@ -31,5 +31,6 @@ class NTM(Model):
             wh(cinternal_out)
 
         prev_reads = tf.concat(reads, axis=-1)
+        self.prev_reads = prev_reads
         return cexternal_out
 

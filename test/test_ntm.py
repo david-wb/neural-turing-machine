@@ -10,4 +10,5 @@ def test_ntm():
     ntm = NTM()
     input = tf.convert_to_tensor([[0]])
 
-    ntm(input)
+    out = ntm(input)
+    print(out.numpy()[0][0])

@@ -31,6 +31,7 @@ class NTMHeadBase(Model):
         self.n_rows, self.n_cols = memory.size()
         self.controller_size = controller_size
         self.w = tf.Variable(tf.keras.initializers.glorot_uniform()(shape=(1, self.n_rows)), trainable=False)
+        self.w.assign(tf.nn.softmax(self.w))
 
     def is_read_head(self):
         return NotImplementedError
@@ -82,8 +83,8 @@ class NTMWriteHead(NTMHeadBase):
         # beta, g, and gamma are scalars. s is the shift vector which usually has length 3.
         # So the output size should be n_cols * 3 + 6.
         self.output_size = self.n_cols * 3 + 6
-        self.fc1 = Dense(64, input_shape=(controller_output_size,), activation='relu')
-        self.fc_write = Dense(self.output_size, input_shape=(64,))
+        self.fc1 = Dense(32, input_shape=(controller_output_size,), activation='relu')
+        self.fc_write = Dense(self.output_size, input_shape=(32,))
 
     def is_read_head(self):
         return False

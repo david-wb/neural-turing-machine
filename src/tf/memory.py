@@ -37,7 +37,7 @@ class NTMMemory(Model):
 
         # Initialize memory bias tensor
         stdev = 1 / (np.sqrt(n_rows + n_cols))
-        self.mem_bias: tf.Variable = tf.Variable(tf.random.uniform((n_rows, n_cols), -stdev, stdev), name='mem_bias')
+        self.mem_bias: tf.Variable = tf.Variable(tf.random.uniform((n_rows, n_cols), -stdev, stdev), name='mem_bias', trainable=False)
 
     def reset(self):
         """Initialize memory from bias, for start-of-sequence."""
@@ -53,8 +53,8 @@ class NTMMemory(Model):
     def write(self, w, e, a):
         """write to memory (according to section 3.2)."""
         self.prev_mem = self.mem
-        erase = tf.matmul(tf.expand_dims(w, -1), tf.expand_dims(e, 0))
-        add = tf.matmul(tf.expand_dims(w, -1), tf.expand_dims(a, 0))
+        erase = tf.matmul(tf.transpose(w), e)
+        add = tf.matmul(tf.transpose(w), a)
         self.mem = self.prev_mem * (1 - erase) + add
 
     def address(self, k, beta, g, s, gamma, w_prev):
@@ -91,6 +91,6 @@ class NTMMemory(Model):
         return result
 
     def _sharpen(self, w_hat, gamma):
-        w = w_hat ** gamma
+        w = tf.pow(w_hat, gamma)
         w = w / (tf.math.reduce_sum(w) + 1e-16)
         return w

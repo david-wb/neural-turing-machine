@@ -9,10 +9,10 @@ from src.tf.memory import NTMMemory
 class FFController(Model):
     def __init__(self):
         super(FFController, self).__init__()
-        self.d1 = Dense(128, activation='relu')
-        self.d2 = Dense(128, activation='relu')
+        self.d1 = Dense(32, activation='relu')
+        self.d2 = Dense(32, activation='relu')
         self.fc_external_out = Dense(1)
-        self.fc_internal_out = Dense(64)
+        self.fc_internal_out = Dense(32, activation='relu')
 
     def call(self, inputs):
         x = tf.concat(inputs, axis=-1) + 1
