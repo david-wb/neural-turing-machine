@@ -1,5 +1,5 @@
 # neural-turing-machine-explained
-This repo contains a minimalistic implementation of the Neural Turing Machine model, 
+This repo contains a minimalistic TensorFlow implementation of the Neural Turing Machine model, 
 the first of the so called "memory augmented neural networks" or "memory networks" for short.
 The implementation is intentionally kept as simple as possible with zero fluff so that even a caveman
 like me can understand it.
