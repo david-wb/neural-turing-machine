@@ -1,3 +1,6 @@
 .idea/
 .pytest_cache/
 __pycache__/
+.ipynb_checkpoints/
+copy_model/
+logs/

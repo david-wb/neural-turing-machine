@@ -10,14 +10,26 @@ from src.tf.read_write_heads import NTMReadHead, NTMWriteHead
 
 
 class NTM(Model):
-    def __init__(self, n_heads=1):
+    def __init__(self, n_heads=1, memory_dim=16, memory_size=128):
         super(NTM, self).__init__()
 
-        self.controller = FFController()
-        self.mem = NTMMemory(100, 8)
-        self.read_heads = [NTMReadHead(self.mem, 32) for _ in range(n_heads)]
-        self.write_heads = [NTMWriteHead(self.mem, 32) for _ in range(n_heads)]
-        self.prev_reads = tf.keras.initializers.GlorotNormal()(shape=(1, 8*n_heads), dtype='float32')
+        self.memory_dim = memory_dim
+        self.n_heads = n_heads
+        self.controller = FFController(output_size=100)
+        self.mem = NTMMemory(memory_size, memory_dim)
+        self.read_heads = [NTMReadHead(self.mem, 100) for _ in range(n_heads)]
+        self.write_heads = [NTMWriteHead(self.mem, 100) for _ in range(n_heads)]
+
+        self.prev_reads = None
+        self.init_reads = tf.Variable(tf.zeros(shape=(1, memory_dim * n_heads), dtype='float32'))
+
+    def reset(self):
+        self.mem.reset()
+        for rh in self.read_heads:
+            rh.reset()
+        for wh in self.write_heads:
+            wh.reset()
+        self.prev_reads = self.init_reads
 
     def call(self, inputs):
         inputs = tf.cast(inputs, dtype='float32')

@@ -30,8 +30,14 @@ class NTMHeadBase(Model):
         self.mem: NTMMemory = memory
         self.n_rows, self.n_cols = memory.size()
         self.controller_size = controller_size
-        self.w = tf.Variable(tf.keras.initializers.glorot_uniform()(shape=(1, self.n_rows)), trainable=False)
-        self.w.assign(tf.nn.softmax(self.w))
+        self.w = None
+        self.init_w = tf.Variable(tf.zeros(shape=(1, self.n_rows), dtype='float32'))
+        self.reset()
+
+    def reset(self):
+        w = np.zeros(shape=(1, self.n_rows), dtype='float32')
+        w[0, 0] = 1.0
+        self.w = tf.nn.softmax(self.init_w)
 
     def is_read_head(self):
         return NotImplementedError
@@ -57,7 +63,6 @@ class NTMReadHead(NTMHeadBase):
         self.output_size = self.n_cols + 6
         self.fc_read = Dense(self.output_size, input_shape=(controller_output_size,))
 
-
     def is_read_head(self):
         return True
 
@@ -69,7 +74,7 @@ class NTMReadHead(NTMHeadBase):
         w = self._address_memory(k, beta, g, s, gamma, self.w)
         r = self.mem.read(w)
 
-        self.w.assign(w)
+        self.w = w
         return r
 
 
@@ -100,4 +105,5 @@ class NTMWriteHead(NTMHeadBase):
         # Write to memory
         w = self._address_memory(k, beta, g, s, gamma, self.w)
         self.mem.write(w, e, a)
-        self.w.assign(w)
+        self.w = w
+        return w

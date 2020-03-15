@@ -37,11 +37,11 @@ class NTMMemory(Model):
 
         # Initialize memory bias tensor
         stdev = 1 / (np.sqrt(n_rows + n_cols))
-        self.mem_bias: tf.Variable = tf.Variable(tf.random.uniform((n_rows, n_cols), -stdev, stdev), name='mem_bias', trainable=False)
+        self.mem = tf.ones(shape=(n_rows, n_cols)) * 1e-6
 
     def reset(self):
         """Initialize memory from bias, for start-of-sequence."""
-        self.mem = tf.convert_to_tensor(self.mem_bias)
+        self.mem = tf.ones(shape=self.size()) * 1e-6
 
     def size(self):
         return self.n_rows, self.n_cols
