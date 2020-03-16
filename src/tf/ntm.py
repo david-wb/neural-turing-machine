@@ -21,7 +21,9 @@ class NTM(Model):
         self.write_heads = [NTMWriteHead(self.mem, 100) for _ in range(n_heads)]
 
         self.prev_reads = None
-        self.init_reads = tf.Variable(tf.zeros(shape=(1, memory_dim * n_heads), dtype='float32'))
+
+        init_reads = tf.keras.initializers.GlorotNormal()(shape=(1, memory_dim * n_heads), dtype='float32')
+        self.init_reads = tf.Variable(init_reads)
 
     def reset(self):
         self.mem.reset()

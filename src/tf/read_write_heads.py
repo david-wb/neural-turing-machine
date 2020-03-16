@@ -31,7 +31,9 @@ class NTMHeadBase(Model):
         self.n_rows, self.n_cols = memory.size()
         self.controller_size = controller_size
         self.w = None
-        self.init_w = tf.Variable(tf.zeros(shape=(1, self.n_rows), dtype='float32'))
+
+        init_w = tf.keras.initializers.GlorotNormal()(shape=(1, self.n_rows), dtype='float32')
+        self.init_w = tf.Variable(init_w)
         self.reset()
 
     def reset(self):
@@ -65,8 +67,8 @@ class NTMReadHead(NTMHeadBase):
         return True
 
     def call(self, x):
-        o = self.fc_read(x)
-        k, beta, g, s, gamma = tf.split(o, [self.n_cols, 1, 1, 3, 1], axis=-1)
+        x = self.fc_read(x)
+        k, beta, g, s, gamma = tf.split(x, [self.n_cols, 1, 1, 3, 1], axis=-1)
 
         # Read from memory
         w = self._address_memory(k, beta, g, s, gamma, self.w)
@@ -86,16 +88,14 @@ class NTMWriteHead(NTMHeadBase):
         # beta, g, and gamma are scalars. s is the shift vector which usually has length 3.
         # So the output size should be n_cols * 3 + 6.
         self.output_size = self.n_cols * 3 + 6
-        self.fc1 = Dense(32, input_shape=(controller_output_size,), activation='relu')
-        self.fc_write = Dense(self.output_size, input_shape=(32,))
+        self.fc_write = Dense(self.output_size, input_shape=(controller_output_size,))
 
     def is_read_head(self):
         return False
 
     def call(self, x):
-        o = self.fc1(x)
-        o = self.fc_write(o)
-        k, beta, g, s, gamma, e, a = tf.split(o, [self.n_cols, 1, 1, 3, 1, self.n_cols, self.n_cols], axis=-1)
+        x = self.fc_write(x)
+        k, beta, g, s, gamma, e, a = tf.split(x, [self.n_cols, 1, 1, 3, 1, self.n_cols, self.n_cols], axis=-1)
 
         # e should be in [0, 1]
         e = tf.nn.sigmoid(e)
