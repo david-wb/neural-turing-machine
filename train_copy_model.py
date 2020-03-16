@@ -54,7 +54,7 @@ def train():
 
     for i in range(1000):
         batch = []
-        for _ in range(100):
+        for _ in range(50):
             length = np.random.randint(1, 21)
             seq = np.random.randint(2, size=length)
             batch.append(seq)
