@@ -7,14 +7,16 @@ from src.tf.memory import NTMMemory
 
 
 class FFController(Model):
-    def __init__(self, output_size=100):
+    def __init__(self, output_size=100, external_output_size=1):
         super(FFController, self).__init__()
         self.d1 = Dense(output_size, activation='relu')
-        self.fc_external_out = Dense(1)
+        self.fc_external_out = Dense(external_output_size)
         self.fc_internal_out = Dense(output_size, activation='relu')
 
     def call(self, inputs):
-        x = tf.concat(inputs, axis=-1)
+        x, prev_read = inputs
+        x = tf.reshape(x, [1, -1])
+        x = tf.concat([x, prev_read], axis=-1)
         x = self.d1(x)
         external_out = self.fc_external_out(x)
         internal_out = self.fc_internal_out(x)

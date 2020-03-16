@@ -33,25 +33,18 @@ class NTMMemory(Model):
 
         # Initialize memory tensor
         self.prev_mem = None
-        self.mem: tf.Tensor = tf.zeros((n_rows, n_cols))
-
-        # Initialize memory bias tensor
-        stdev = 1 / (np.sqrt(n_rows + n_cols))
         self.mem = tf.ones(shape=(n_rows, n_cols)) * 1e-6
 
     def reset(self):
-        """Initialize memory from bias, for start-of-sequence."""
         self.mem = tf.ones(shape=self.size()) * 1e-6
 
     def size(self):
         return self.n_rows, self.n_cols
 
     def read(self, weights: tf.Tensor):
-        """Read from memory (according to section 3.1)."""
         return tf.linalg.matvec(tf.transpose(self.mem), weights)
 
     def write(self, w, e, a):
-        """write to memory (according to section 3.2)."""
         self.prev_mem = self.mem
         erase = tf.matmul(tf.transpose(w), e)
         add = tf.matmul(tf.transpose(w), a)

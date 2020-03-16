@@ -4,3 +4,4 @@ __pycache__/
 .ipynb_checkpoints/
 copy_model/
 logs/
+assoc_model/

@@ -10,12 +10,12 @@ from src.tf.read_write_heads import NTMReadHead, NTMWriteHead
 
 
 class NTM(Model):
-    def __init__(self, n_heads=1, memory_dim=16, memory_size=128):
+    def __init__(self, n_heads=1, memory_dim=16, memory_size=128, external_output_size=1):
         super(NTM, self).__init__()
 
         self.memory_dim = memory_dim
         self.n_heads = n_heads
-        self.controller = FFController(output_size=100)
+        self.controller = FFController(output_size=100, external_output_size=external_output_size)
         self.mem = NTMMemory(memory_size, memory_dim)
         self.read_heads = [NTMReadHead(self.mem, 100) for _ in range(n_heads)]
         self.write_heads = [NTMWriteHead(self.mem, 100) for _ in range(n_heads)]

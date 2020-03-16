@@ -4,10 +4,6 @@ the first of the so called "memory augmented neural networks" or "memory network
 The implementation is intentionally kept as simple as possible with zero fluff so that even a caveman
 like me can understand it.
 
-This model was trained on a copy task similar to the one from the original paper. In the copy task,
-the NTM is fed a sequence of random bits one at a time, followed by a sequence of -1's of the same length. 
-The model is trained to output the original sequence bits when it receives the -1's. 
-
 The main components of the NTM architecture are shown here:
 
 ![Alt text](./static/ntm.png?raw=true "NTM Model Diagram")
@@ -35,3 +31,11 @@ and down or keeping it in place. `g` determines how much the new weight vector i
 ```python
 w = g * wc + (1 - g) * w_prev
 ``` 
+
+
+## Copy Task
+
+The model was trained on a copy task similar to the one from the original paper. In the copy task,
+the NTM is fed a sequence of random bits one at a time, followed by a sequence of -1's of the same length. 
+The model is trained to output the original sequence bits when it receives the -1's. 
+

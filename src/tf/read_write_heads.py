@@ -35,8 +35,6 @@ class NTMHeadBase(Model):
         self.reset()
 
     def reset(self):
-        w = np.zeros(shape=(1, self.n_rows), dtype='float32')
-        w[0, 0] = 1.0
         self.w = tf.nn.softmax(self.init_w)
 
     def is_read_head(self):
