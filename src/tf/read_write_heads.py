@@ -33,7 +33,9 @@ class NTMHeadBase(Model):
         self.w = None
 
         init_w = tf.keras.initializers.GlorotNormal()(shape=(1, self.n_rows), dtype='float32')
-        self.init_w = tf.Variable(init_w)
+        w = np.zeros((1, self.n_rows), dtype='float32')
+        w[0, 1] = 100
+        self.init_w = tf.Variable(tf.convert_to_tensor(w))
         self.reset()
 
     def reset(self):

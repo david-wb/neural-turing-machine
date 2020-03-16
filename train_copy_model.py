@@ -52,9 +52,9 @@ def train_step(batch, i, min_loss):
 def train():
     min_loss = float('inf')
 
-    for i in range(1000):
+    for i in range(10000):
         batch = []
-        for _ in range(50):
+        for _ in range(5):
             length = np.random.randint(1, 21)
             seq = np.random.randint(2, size=length)
             batch.append(seq)

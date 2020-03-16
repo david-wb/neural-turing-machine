@@ -33,10 +33,12 @@ class NTMMemory(Model):
 
         # Initialize memory tensor
         self.prev_mem = None
-        self.mem = tf.ones(shape=(n_rows, n_cols)) * 1e-6
+        #self.mem = tf.zeros(shape=(n_rows, n_cols), dtype='float32')
+        self.mem = tf.keras.initializers.GlorotNormal()(shape=(n_rows, n_cols), dtype='float32') * 1e-8
 
     def reset(self):
-        self.mem = tf.ones(shape=self.size()) * 1e-6
+        # self.mem = tf.zeros(shape=(self.n_rows, self.n_cols), dtype='float32')
+        self.mem = tf.keras.initializers.GlorotNormal()(shape=(self.n_rows, self.n_cols), dtype='float32')
 
     def size(self):
         return self.n_rows, self.n_cols
