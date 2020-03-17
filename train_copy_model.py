@@ -13,7 +13,7 @@ if os.path.exists('./copy_model'):
     ntm.load_weights('copy_model/weights')
 
 loss_object = tf.keras.losses.BinaryCrossentropy(from_logits=True)
-optimizer = tf.keras.optimizers.Adam()
+optimizer = tf.keras.optimizers.Adam(learning_rate=1e-4)
 
 current_time = datetime.now().strftime("%Y%m%d-%H%M%S")
 train_log_dir = 'logs/gradient_tape/' + current_time + '/train'
@@ -54,7 +54,7 @@ def train():
 
     for i in range(10000):
         batch = []
-        for _ in range(5):
+        for _ in range(10):
             length = np.random.randint(1, 21)
             seq = np.random.randint(2, size=length)
             batch.append(seq)

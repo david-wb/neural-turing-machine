@@ -32,10 +32,11 @@ class NTMHeadBase(Model):
         self.controller_size = controller_size
         self.w = None
 
-        init_w = tf.keras.initializers.GlorotNormal()(shape=(1, self.n_rows), dtype='float32')
-        w = np.zeros((1, self.n_rows), dtype='float32')
-        w[0, 1] = 100
-        self.init_w = tf.Variable(tf.convert_to_tensor(w))
+        init_w = tf.initializers.glorot_normal()(shape=(1, self.n_rows))
+
+        init_w = np.zeros((1, self.n_rows), dtype='float32')
+        init_w[0, 0] = 100
+        self.init_w = tf.Variable(init_w, name='init_w')
         self.reset()
 
     def reset(self):
