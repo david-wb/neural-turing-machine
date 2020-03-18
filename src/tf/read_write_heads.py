@@ -1,30 +1,13 @@
-"""NTM Read and Write Heads."""
 import numpy as np
-
 import tensorflow as tf
 from tensorflow.keras import Model
 from tensorflow.keras.layers import Dense
+
 from src.tf.memory import NTMMemory
 
 
-def _split_cols(mat, lengths):
-    """Split a 2D matrix to variable length columns."""
-    assert mat.size()[1] == sum(lengths), "Lengths must be summed to num columns"
-    l = np.cumsum([0] + lengths)
-    results = []
-    for s, e in zip(l[:-1], l[1:]):
-        results += [mat[:, s:e]]
-    return results
-
-
 class NTMHeadBase(Model):
-    """An NTM Read/Write Head."""
-
     def __init__(self, memory, controller_size):
-        """Initilize the read/write head.
-        :param memory: The :class:`NTMMemory` to be addressed by the head.
-        :param controller_size: The size of the internal representation.
-        """
         super(NTMHeadBase, self).__init__()
 
         self.mem: NTMMemory = memory

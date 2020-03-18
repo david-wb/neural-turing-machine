@@ -1,15 +1,15 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import tensorflow as tf
-from tensorflow.keras.layers import Dense
 from tensorflow.keras import Model
+from tensorflow.keras.layers import Dense
 
 from src.tf.memory import NTMMemory
 from src.tf.read_write_heads import NTMReadHead, NTMWriteHead
 
 
 class NTM(Model):
-    def __init__(self, n_heads=1, memory_dim=16, memory_size=128, external_output_size=1):
+    def __init__(self, n_heads=1, memory_dim=20, memory_size=100, external_output_size=1):
         super(NTM, self).__init__()
 
         self.memory_dim = memory_dim
