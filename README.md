@@ -1,7 +1,7 @@
 # The Neural Turing Machine - Explained
 This repo contains an absolute bare-minimum implementation of the Neural Turing Machine model, 
 the first of the so called "memory augmented neural networks."
-The implementation is in TensorFlow and is intentionally kept as simple as so that even a caveman like me can understand it.
+The implementation is in TensorFlow and is intentionally kept as simple as possible so that even a caveman like me can understand it.
 
 The main components of the NTM are shown here:
 
