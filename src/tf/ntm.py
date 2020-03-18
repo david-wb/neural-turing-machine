@@ -22,6 +22,8 @@ class NTM(Model):
 
         self.init_reads = tf.Variable(tf.zeros(shape=(1, memory_dim * n_heads), dtype='float32'), name='init_reads')
         self.fc1 = Dense(200, activation='relu')
+
+        self.fc_out1 = Dense(100, activation='relu')
         self.fc_external_out = Dense(external_output_size)
 
     def reset(self):
@@ -46,9 +48,10 @@ class NTM(Model):
             wh(x)
 
         reads = tf.concat(reads, axis=-1)
+        self.prev_reads = reads
 
         x = tf.concat([x, reads], axis=-1)
+        x = self.fc_out1(x)
         out = self.fc_external_out(x)
-        self.prev_reads = reads
         return out
 
