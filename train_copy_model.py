@@ -3,10 +3,11 @@ from datetime import datetime
 
 import numpy as np
 import tensorflow as tf
-from src.tf.ntm import NTM
 
-ntm = NTM()
-ntm.reset()
+from src.tf.stateless_ntm import StatelessNTM
+# tf.config.experimental_run_functions_eagerly(True)
+
+ntm = StatelessNTM()
 
 if os.path.exists('./copy_model'):
     print('loading weights')
@@ -25,13 +26,16 @@ def train_step(batch):
 
     with tf.GradientTape() as tape:
         for seq in batch:
-            ntm.reset()
+            state = ntm.get_start_state()
 
             for b in seq:
-                ntm(tf.convert_to_tensor([[b]]))
+                x = tf.convert_to_tensor([[b]])
+                _, state = ntm(x, state)
+
             for b in seq:
                 y_true = tf.convert_to_tensor([[b]])
-                pred = ntm(tf.convert_to_tensor([[-1]], dtype='float32'))
+                x = tf.convert_to_tensor([[-1]], dtype='float32')
+                pred, state = ntm(x, state)
                 loss = loss_object(y_true, pred)
                 losses.append(loss)
 
@@ -41,10 +45,10 @@ def train_step(batch):
         optimizer.apply_gradients(zip(gradients, ntm.trainable_variables))
 
 
-def create_val_set():
+def create_val_set(max_len):
     val_set = []
-    for _ in range(100):
-        length = np.random.randint(1, 21)
+    for _ in range(10):
+        length = np.random.randint(1, max_len + 1)
         seq = np.random.randint(2, size=length)
         val_set.append(seq)
     return val_set
@@ -53,13 +57,16 @@ def create_val_set():
 def eval(val_set, i, min_loss):
     losses = []
     for seq in val_set:
-        ntm.reset()
+        state = ntm.get_start_state()
 
         for b in seq:
-            ntm(tf.convert_to_tensor([[b]]))
+            x = tf.convert_to_tensor([[b]])
+            _, state = ntm(x, state)
+
         for b in seq:
             y_true = tf.convert_to_tensor([[b]])
-            pred = ntm(tf.convert_to_tensor([[-1]], dtype='float32'))
+            x = tf.convert_to_tensor([[-1]], dtype='float32')
+            pred, state = ntm(x, state)
             loss = loss_object(y_true, pred)
             losses.append(loss)
 
@@ -76,21 +83,23 @@ def eval(val_set, i, min_loss):
 
 def train():
     min_loss = float('inf')
-
-    val_set = create_val_set()
+    val_set = create_val_set(max_len=20)
+    batch_size = 10
 
     for i in range(10000):
         batch = []
-        for _ in range(10):
-            length = np.random.randint(1, 21)
+        max_len = 20
+
+        for _ in range(batch_size):
+            length = np.random.randint(1, max_len + 1)
             seq = np.random.randint(2, size=length)
             batch.append(seq)
 
         train_step(batch)
 
         if i % 10 == 0:
-            min_loss = eval(val_set, i, min_loss)
-            if min_loss < 1e-3:
+            min_loss = eval(val_set, i * batch_size, min_loss)
+            if max_len >= 20 and min_loss < 1e-3:
                 break
 
 

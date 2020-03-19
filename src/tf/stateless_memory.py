@@ -12,17 +12,14 @@ def _convolve(w, s):
     return c
 
 
-class NTMMemory:
-    def __init__(self, n_rows: int, n_cols: int):
-        self.n_rows = n_rows
-        self.n_cols = n_cols
+class StatelessNTMMemory:
+    def __init__(self, mem):
+        self.n_rows = mem.shape[0]
+        self.n_cols = mem.shape[1]
+        self.mem = mem
 
-        # Initialize memory tensor
-        self.prev_mem = None
-        self.mem = None
-
-    def reset(self):
-        self.mem = tf.ones(shape=(self.n_rows, self.n_cols), dtype='float32') * 1e-6
+    def update(self, mem):
+        self.mem = tf.identity(mem)
 
     def size(self):
         return self.n_rows, self.n_cols

@@ -18,39 +18,49 @@ class NTM(Model):
         self.read_heads = [NTMReadHead(self.mem, 200) for _ in range(n_heads)]
         self.write_heads = [NTMWriteHead(self.mem, 200) for _ in range(n_heads)]
 
-        self.prev_reads = None
+        self.prev_reads = tf.zeros(shape=(1, self.memory_dim * self.n_heads), dtype='float32')
 
-        self.init_reads = tf.Variable(tf.zeros(shape=(1, memory_dim * n_heads), dtype='float32'), name='init_reads')
+        self.reads_bias = tf.Variable(tf.zeros(shape=(1, memory_dim * n_heads), dtype='float32'), name='reads_bias')
         self.fc1 = Dense(200, activation='relu')
 
         self.fc_out1 = Dense(100, activation='relu')
         self.fc_external_out = Dense(external_output_size)
 
+    @tf.function
+    def get_init_reads(self):
+        return tf.ones(tf.zeros(shape=(1, self.memory_dim * self.n_heads), dtype='float32'))
+
+    @tf.function
     def reset(self):
         self.mem.reset()
         for rh in self.read_heads:
             rh.reset()
         for wh in self.write_heads:
             wh.reset()
-        self.prev_reads = self.init_reads
+        #self.prev_reads = tf.zeros(shape=(1, self.memory_dim * self.n_heads), dtype='float32')
 
+    @tf.function
     def call(self, inputs):
         x = tf.cast(inputs, dtype='float32')
         x = tf.reshape(x, [1, -1])
-        x = tf.concat([x, self.prev_reads], axis=-1)
-        x = self.fc1(x)
+        x = tf.concat([x, self.prev_reads + self.reads_bias], axis=-1)
 
         reads = []
         for rh in self.read_heads:
             r = rh(x)
             reads.append(r)
+
+        writes = []
         for wh in self.write_heads:
-            wh(x)
+            writes.append(wh(x))
 
         reads = tf.concat(reads, axis=-1)
-        self.prev_reads = reads
+        writes = tf.concat(writes, axis=-1)
 
-        x = tf.concat([x, reads], axis=-1)
+        # Stop gradients otherwise this would be a recurrent network.
+        self.prev_reads = tf.stop_gradient(reads)
+
+        x = tf.concat([x, reads, writes], axis=-1)
         x = self.fc_out1(x)
         out = self.fc_external_out(x)
         return out
