@@ -4,10 +4,10 @@ from datetime import datetime
 import numpy as np
 import tensorflow as tf
 
-from src.tf.stateless_ntm import StatelessNTM
+from src.tf.ntm import NTM
 # tf.config.experimental_run_functions_eagerly(True)
 
-ntm = StatelessNTM()
+ntm = NTM()
 
 if os.path.exists('./copy_model'):
     print('loading weights')

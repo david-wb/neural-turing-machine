@@ -6,7 +6,6 @@ import tensorflow as tf
 from src.tf.ntm import NTM
 
 ntm = NTM(external_output_size=18)
-ntm.reset()
 
 if os.path.exists('./assoc_model'):
     print('loading weights')
@@ -25,16 +24,16 @@ def train_step(batch):
 
     with tf.GradientTape() as tape:
         for seq in batch:
-            ntm.reset()
+            state = ntm.get_start_state()
 
             for item in seq:
-                ntm(tf.convert_to_tensor(item))
+                x = tf.convert_to_tensor(item)
+                _, state = ntm(x, state)
 
             query_i = np.random.randint(len(seq) - 2)
             query = seq[query_i]
             y_true = seq[query_i + 1]
-
-            pred = ntm(query)
+            pred, _ = ntm(query, state)
             pred = tf.reshape(pred, shape=(6, 3))
             loss = loss_object(y_true, pred)
             losses.append(loss)
@@ -48,16 +47,16 @@ def eval(val_set, i, min_loss):
     losses = []
 
     for seq in val_set:
-        ntm.reset()
+        state = ntm.get_start_state()
 
         for item in seq:
-            ntm(tf.convert_to_tensor(item))
+            x = tf.convert_to_tensor(item)
+            _, state = ntm(x, state)
 
         query_i = np.random.randint(len(seq) - 2)
         query = seq[query_i]
         y_true = seq[query_i + 1]
-
-        pred = ntm(query)
+        pred, _ = ntm(query, state)
         pred = tf.reshape(pred, shape=(6, 3))
         loss = loss_object(y_true, pred)
         losses.append(loss)
@@ -88,12 +87,13 @@ def train():
 
     val_set = get_batch(100)
 
+    batch_size = 10
     for i in range(100000):
-        batch = get_batch(10)
+        batch = get_batch(batch_size)
         train_step(batch)
 
         if i % 10 == 0:
-            min_loss = eval(val_set, i, min_loss)
+            min_loss = eval(val_set, i * batch_size, min_loss)
 
             if min_loss < 1e-3:
                 break

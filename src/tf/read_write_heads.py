@@ -7,25 +7,12 @@ from src.tf.memory import NTMMemory
 
 
 class NTMHeadBase(Model):
-    def __init__(self, memory, controller_size):
+    def __init__(self, mem):
         super(NTMHeadBase, self).__init__()
 
-        self.mem: NTMMemory = memory
-        self.n_rows, self.n_cols = memory.size()
-        self.controller_size = controller_size
-        self.w = None
+        self.n_rows, self.n_cols = mem.size()
+        self.mem = mem
 
-        w_init = np.zeros((1, self.n_rows), dtype='float32')
-        w_init[0, 0] = 100
-        self.w_bias = tf.convert_to_tensor(w_init)
-
-        self.reset()
-
-    @tf.function
-    def reset(self):
-        self.w = tf.nn.softmax(self.w_bias)
-
-    @tf.function
     def _address_memory(self, k, beta, g, s, gamma, w_prev):
         # Handle Activations
         beta = tf.nn.softplus(beta)
@@ -38,7 +25,7 @@ class NTMHeadBase(Model):
 
 class NTMReadHead(NTMHeadBase):
     def __init__(self, memory, controller_output_size):
-        super(NTMReadHead, self).__init__(memory, controller_output_size)
+        super(NTMReadHead, self).__init__(memory)
 
         # The read head should output the variables k, beta, g, s, and gamma described in the paper.
         # k is the key vector with length equal to the number of columns in the memory matrix.
@@ -47,22 +34,19 @@ class NTMReadHead(NTMHeadBase):
         self.output_size = self.n_cols + 6
         self.fc_read = Dense(self.output_size, input_shape=(controller_output_size,))
 
-    @tf.function
-    def call(self, x):
+    def call(self, x, w_prev):
         x = self.fc_read(x)
         k, beta, g, s, gamma = tf.split(x, [self.n_cols, 1, 1, 3, 1], axis=-1)
 
         # Read from memory
-        w = self._address_memory(k, beta, g, s, gamma, self.w)
+        w = self._address_memory(k, beta, g, s, gamma, w_prev)
         r = self.mem.read(w)
-
-        self.w = tf.stop_gradient(w)
-        return r
+        return r, w
 
 
 class NTMWriteHead(NTMHeadBase):
     def __init__(self, memory, controller_output_size):
-        super(NTMWriteHead, self).__init__(memory, controller_output_size)
+        super(NTMWriteHead, self).__init__(memory)
 
         # The read head should output the variables k, beta, g, s, gamma, e, and a described in the paper.
         # k is the key vector with length equal to the number of columns in the memory matrix.
@@ -72,8 +56,7 @@ class NTMWriteHead(NTMHeadBase):
         self.output_size = self.n_cols * 3 + 6
         self.fc_write = Dense(self.output_size, input_shape=(controller_output_size,))
 
-    @tf.function
-    def call(self, x):
+    def call(self, x, w_prev):
         x = self.fc_write(x)
         k, beta, g, s, gamma, e, a = tf.split(x, [self.n_cols, 1, 1, 3, 1, self.n_cols, self.n_cols], axis=-1)
 
@@ -81,7 +64,6 @@ class NTMWriteHead(NTMHeadBase):
         e = tf.nn.sigmoid(e)
 
         # Write to memory
-        w = self._address_memory(k, beta, g, s, gamma, self.w)
+        w = self._address_memory(k, beta, g, s, gamma, w_prev)
         self.mem.write(w, e, a)
-        self.w = tf.stop_gradient(w)
-        return tf.concat([w, e, a], axis=-1)
+        return x, w

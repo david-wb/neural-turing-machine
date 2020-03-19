@@ -6,62 +6,62 @@ from tensorflow.keras.layers import Dense
 
 from src.tf.memory import NTMMemory
 from src.tf.read_write_heads import NTMReadHead, NTMWriteHead
+import numpy as np
 
 
 class NTM(Model):
     def __init__(self, n_heads=1, memory_dim=20, memory_size=100, external_output_size=1):
         super(NTM, self).__init__()
 
+        self.memory_size = memory_size
         self.memory_dim = memory_dim
         self.n_heads = n_heads
-        self.mem = NTMMemory(memory_size, memory_dim)
-        self.read_heads = [NTMReadHead(self.mem, 200) for _ in range(n_heads)]
-        self.write_heads = [NTMWriteHead(self.mem, 200) for _ in range(n_heads)]
+        self.mem = NTMMemory(tf.ones(shape=(memory_size, memory_dim), dtype='float32') * 1e-8)
+        self.read_head = NTMReadHead(self.mem, 200)
+        self.write_head = NTMWriteHead(self.mem, 200)
 
-        self.prev_reads = tf.zeros(shape=(1, self.memory_dim * self.n_heads), dtype='float32')
-
-        self.reads_bias = tf.Variable(tf.zeros(shape=(1, memory_dim * n_heads), dtype='float32'), name='reads_bias')
+        self.reads_bias = tf.Variable(tf.zeros(shape=(1, memory_dim), dtype='float32'))
         self.fc1 = Dense(200, activation='relu')
-
         self.fc_out1 = Dense(100, activation='relu')
         self.fc_external_out = Dense(external_output_size)
+        self.init_read = tf.Variable(tf.ones(shape=(1, self.memory_dim), dtype='float32') * 1e-8)
+
+        w_init = np.zeros((1, self.memory_size), dtype='float32')
+        w_init[0, 0] = 100
+        self.init_read_w = tf.Variable(w_init, name='init_read_w')
+        self.init_write_w = tf.Variable(w_init, name='init_write_w')
+
+    def get_start_state(self):
+
+        return {
+            'M': tf.ones(shape=(self.memory_size, self.memory_dim), dtype='float32') * 1e-8,
+            'read_w': tf.nn.softmax(self.init_read_w),
+            'write_w': tf.nn.softmax(self.init_write_w),
+            'read_prev': self.init_read,
+        }
 
     @tf.function
-    def get_init_reads(self):
-        return tf.ones(tf.zeros(shape=(1, self.memory_dim * self.n_heads), dtype='float32'))
+    def call(self, x, prev_state):
+        self.mem.update(prev_state['M'])
 
-    @tf.function
-    def reset(self):
-        self.mem.reset()
-        for rh in self.read_heads:
-            rh.reset()
-        for wh in self.write_heads:
-            wh.reset()
-        #self.prev_reads = tf.zeros(shape=(1, self.memory_dim * self.n_heads), dtype='float32')
-
-    @tf.function
-    def call(self, inputs):
-        x = tf.cast(inputs, dtype='float32')
+        x = tf.cast(x, dtype='float32')
         x = tf.reshape(x, [1, -1])
-        x = tf.concat([x, self.prev_reads + self.reads_bias], axis=-1)
+        x = tf.concat([x, prev_state['read_prev'] + self.reads_bias], axis=-1)
+        x = self.fc1(x)
 
-        reads = []
-        for rh in self.read_heads:
-            r = rh(x)
-            reads.append(r)
+        read, read_w = self.read_head(x, prev_state['read_w'])
+        write, write_w = self.write_head(x, prev_state['write_w'])
 
-        writes = []
-        for wh in self.write_heads:
-            writes.append(wh(x))
-
-        reads = tf.concat(reads, axis=-1)
-        writes = tf.concat(writes, axis=-1)
-
-        # Stop gradients otherwise this would be a recurrent network.
-        self.prev_reads = tf.stop_gradient(reads)
-
-        x = tf.concat([x, reads, writes], axis=-1)
+        x = tf.concat([x, read], axis=-1)
         x = self.fc_out1(x)
+
         out = self.fc_external_out(x)
-        return out
+        state = {
+            'M': self.mem.mem,
+            'read_w': read_w,
+            'write_w': write_w,
+            'read_prev': read
+        }
+
+        return out, state
 
