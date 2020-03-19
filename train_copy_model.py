@@ -99,7 +99,7 @@ def train():
 
         if i % 10 == 0:
             min_loss = eval(val_set, i * batch_size, min_loss)
-            if max_len >= 20 and min_loss < 1e-3:
+            if min_loss < 1e-2:
                 break
 
 
