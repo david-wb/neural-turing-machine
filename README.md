@@ -1,16 +1,16 @@
 # The Neural Turing Machine - Explained
-This repo contains an absolute bare-minimum implementation of the Neural Turing Machine model, 
+This repo contains a bare-minimum implementation of the Neural Turing Machine model, 
 the first of the so called "memory augmented neural networks."
-The implementation is in TensorFlow and is intentionally kept as simple as possible so that even a caveman like me can understand it.
+It is implemented in TensorFlow and intentionally kept as simple as possible for easy understanding.
 
 The main components of the NTM are shown here:
 
 ![Alt text](./static/ntm.png?raw=true "NTM Model Diagram")
 
-The controller is a simple feed-forward NN, which takes one external output,
+The controller is a simple feed-forward NN, which takes one external input,
 the bits in a sequence, and one internal input, the previous read vector from the memory.
 
-The memory itself is just a matrix 100 rows and 20 columns. Before the start of each new sequence,
+The memory itself is just a matrix of 100 rows and 20 columns. Before the start of each new sequence,
 the memory matrix is filled with a small constant value of 1e-6. 
 
 Every time the model receives an external input, it first passes it and the previous read vector through
